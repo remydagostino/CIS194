@@ -31,14 +31,13 @@ type Move = (Peg, Peg)
 -- [("a","b"),("a","c"),("b","c"),("a","b"),("c","a"),("c","b"),("a","b")]
 hanoi :: Integer -> Peg -> Peg -> Peg -> [Move]
 hanoi 0 _ _ _  = []
-
 hanoi x start finish temp =
   let
     topToTemp = hanoi (x - 1) start temp finish
     myMove = (start, finish)
     tempToFinish = hanoi (x - 1) temp finish start
   in
-    topToTemp ++ [myMove] ++ tempmpToFinish
+    topToTemp ++ [myMove] ++ tempToFinish
 
 
 
