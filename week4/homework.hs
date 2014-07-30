@@ -64,17 +64,63 @@ data Tree a = Leaf
             | Node Integer (Tree a) a (Tree a)
      deriving (Show, Eq)
 
-foldNode :: Tree a -> a -> Tree a
-foldNode Leaf a                                          = Node 0 Leaf a Leaf
-foldNode (Node h Leaf b Leaf) a                          = Node (h + 1) Leaf b (Node h Leaf b Leaf)
-foldNode (Node h Leaf b right@(Node ih _ _ _)) a         = Node h (Node ih Leaf a Leaf) b right
-foldNode (Node h left@(Node ih _ _ _) b Leaf) a          = Node h left b (Node ih Leaf a Leaf)
-foldNode node@(Node h (Node _ _ _ _) b (Node _ _ _ _)) a = Node (h + 1) node a Leaf
+treeHeight :: Tree a -> Integer
+treeHeight Leaf           = 0
+treeHeight (Node h _ _ _) = h
 
--- If the tree is full we have to split it and put the odd one on the far right
--- split a tree by increasing the `height` of every node by 1 and inserting a 0 on the far right
--- Otherwise we need to fight the rightmost leaf and replace it with a node
+-- | foldNode
+-- >>> foldNode 'a' Leaf
+-- Node 0 Leaf 'a' Leaf
+--
+-- >>> foldNode 'a' (Node 0 Leaf 'b' Leaf)
+-- Node 1 (Node 0 Leaf 'a' Leaf) 'b' Leaf
+--
+-- >>> foldNode 'a' (Node 1 Leaf 'b' (Node 0 Leaf 'c' Leaf))
+-- Node 1 (Node 0 Leaf 'a' Leaf) 'b' (Node 0 Leaf 'c' Leaf)
+--
+-- >>> foldNode 'a' (Node 1 (Node 0 Leaf 'c' Leaf) 'b' Leaf)
+-- Node 1 (Node 0 Leaf 'c' Leaf) 'b' (Node 0 Leaf 'a' Leaf)
+--
+-- >>> foldNode 'a' (Node 1 (Node 0 Leaf 'c' Leaf) 'b' (Node 0 Leaf 'd' Leaf))
+-- Node 2 (Node 1 (Node 0 Leaf 'a' Leaf) 'c' Leaf) 'b' (Node 0 Leaf 'd' Leaf)
+--
+foldNode :: a -> Tree a -> Tree a
+-- Leaf
+foldNode a Leaf =
+  Node 0 Leaf a Leaf
+-- Leafy Node
+foldNode a (Node h Leaf b Leaf) =
+  Node (h + 1) (foldNode a Leaf) b Leaf
+-- Leaf on the left
+foldNode a (Node h Leaf b right@(Node _ _ _ _)) =
+  Node h (foldNode a Leaf) b right
+-- Leaf on the right
+foldNode a (Node h left@(Node _ _ _ _) b Leaf) =
+  Node h left b (foldNode a Leaf)
+-- Nodes everywhere
+foldNode a (Node h left@(Node hl _ _ _) b right@(Node hr _ _ _)) =
+  let (newL, newR) = if hr < hl
+                     then (left, (foldNode a right))
+                     else ((foldNode a left), right)
+  in
+    Node ((max (treeHeight newL) (treeHeight newR)) + 1) newL b newR
 
 foldTree :: [a] -> Tree a
-foldTree = foldl foldNode Leaf
+foldTree = foldr foldNode Leaf
+
+
+-- | Exercise 3 : xor
+--
+-- >>> xor [False, True, False]
+-- True
+--
+-- >>> xor [False, True, False, False, True]
+-- False
+--
+xor :: [Bool] -> Bool
+xor = foldr (\v m -> if v == True then not m else m) False
+
+-- | Exercise 3 : map
+map' :: (a -> b) -> [a] -> [b]
+map' f a = foldr (\v m -> (f v):m) [] a
 
